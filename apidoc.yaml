@@ -1,0 +1,2867 @@
+openapi: "3.0.2"
+info:
+  title: EventX Public API
+  version: 1.0.0
+servers:
+  - url: https://esaas-api.eventx.docker/public-api/v1
+paths:
+  /tokens:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenCreateBody"
+        required: true
+      tags:
+        - Auth
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenCreateResponse"
+          description: OK
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      summary: Create public api access token
+  /events:
+    summary: Path used to manage the list of events.
+    description:
+      The REST endpoint/path used to list and create zero or more `Event`
+      entities.  This path contains a `GET` and `POST` operation to perform the
+      list and create tasks, respectively.
+    get:
+      tags:
+        - Event
+      parameters:
+        - $ref: "#/components/parameters/offsetParam"
+        - $ref: "#/components/parameters/limitParam"
+        - name: sort
+          schema:
+            type: string
+          in: query
+          required: false
+        - name: name
+          schema: &a1
+            type: string
+          in: query
+          required: false
+          description: Search filters - name
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventsResponse"
+          description: Successful response - returns an array of `Event` entities.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/InternalServerError"
+      operationId: getEvents
+      summary: List all events
+      description: Gets a list of all `Event` entities.
+
+  /events/{eventId}:
+    summary: Path used to manage a single event.
+    description: The REST endpoint/path used to get, patch and delete single
+      instances of an `Event`.  This path contains `GET`, `PATCH` and `DELETE`
+      operations used to perform the get, patch and delete tasks, respectively.
+    get:
+      tags:
+        - Event
+      parameters:
+        - $ref: "#/components/parameters/eventIdParam"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventResponse"
+          description: Successful response - returns a single `Event`.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        default:
+          $ref: "#/components/responses/InternalServerError"
+      operationId: getEvent
+      summary: Get a event
+      description: Gets the details of a single instance of a `Event`.
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventPatchBody"
+        description: The `Event` to be patched.
+        required: true
+      tags:
+        - Event
+      parameters:
+        - $ref: "#/components/parameters/XRequestIdParam"
+        - $ref: "#/components/parameters/eventIdParam"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventResponse"
+          description: Successful response - returns a single `Event`.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        default:
+          $ref: "#/components/responses/InternalServerError"
+      operationId: patchEvent
+      summary: Patch a Event
+      description: Patches an existing `Event`.
+  /events/{eventId}/attendees:
+    summary: Path used to manage the list of attendees.
+    description: The REST endpoint/path used to list and create zero or more
+      `Attendee` entities.  This path contains a `GET` and `POST` operation to
+      perform the list and create tasks, respectively.
+    get:
+      tags:
+        - Attendee
+      parameters:
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+        - $ref: "#/components/parameters/offsetParam"
+        - $ref: "#/components/parameters/limitParam"
+        - name: sort
+          schema:
+            type: string
+            enum:
+              - createdAt
+          in: query
+          required: false
+        - name: email
+          schema: &a2
+            type: string
+            maxLength: 100
+          in: query
+          required: false
+          description: Search filters - email
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendeesResponse"
+          description: Successful response - returns an array of `Attendee` entities.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+      operationId: getAttendees
+      summary: List all attendees
+      description: Gets a list of all `Attendee` entities.
+    post:
+      requestBody:
+        description: A new `Attendee` to be created.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Attendee"
+        required: true
+      tags:
+        - Attendee
+      parameters:
+        - name: X-Request-ID
+          description: A unique identifier for the request.
+          schema:
+            type: string
+            format: uuid
+          in: header
+          required: false
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendeeResponse"
+          description: Successful response
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+      operationId: createAttendee
+      summary: Create a attendee
+      description: Creates a new instance of a `Attendee`.
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - required:
+                      - id
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                  - $ref: "#/components/schemas/AttendeePatchBody"
+        required: true
+      tags:
+        - Attendee
+      parameters:
+        - name: X-Request-ID
+          description: A unique identifier for the request.
+          schema:
+            type: string
+            format: uuid
+          in: header
+          required: false
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendeesResponse"
+          description: Successful response - returns a single `Attendee`.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+      operationId: patchAttendees
+      summary: Patch multiple attendees
+      description: Patches multiple instances of a `Attendee`.
+  /events/{eventId}/attendees/{attendeeId}:
+    summary: Path used to manage a single attendee.
+    description: The REST endpoint/path used to get, patch and delete single
+      instances of an `Attendee`.  This path contains `GET`, `PATCH` and
+      `DELETE` operations used to perform the get, patch and delete tasks,
+      respectively.
+    get:
+      tags:
+        - Attendee
+      parameters:
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: attendeeId
+          description: A unique identifier for a `Attendee`.
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendeeResponse"
+          description: Successful response - returns a single `Attendee`.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+      operationId: getAttendee
+      summary: Get a attendee
+      description: Gets the details of a single instance of a `Attendee`.
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttendeePatchBody"
+        description: The `Attendee` to be patched.
+        required: true
+      tags:
+        - Attendee
+      parameters:
+        - name: X-Request-ID
+          description: A unique identifier for the request.
+          schema:
+            type: string
+            format: uuid
+          in: header
+          required: false
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: attendeeId
+          description: A unique identifier for a `Attendee`.
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendeeResponse"
+          description: Successful response - returns a single `Attendee`.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+      operationId: patchAttendee
+      summary: Patch a Attendee
+      description: Patches an existing `Attendee`.
+    delete:
+      tags:
+        - Attendee
+      parameters:
+        - name: X-Request-ID
+          description: A unique identifier for the request.
+          schema:
+            type: string
+            format: uuid
+          in: header
+          required: false
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: attendeeId
+          description: A unique identifier for a `Attendee`.
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "204":
+          description: Successful response
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+      operationId: deleteAttendee
+      summary: Delete a Attendee
+      description: Deletes an existing `Attendee`.
+  /events/{eventId}/custom-fields:
+    summary: Path used to manage the list of custom fields.
+    description: The REST endpoint/path used to list and create zero or more
+      `CustomField` entities.  This path contains a `GET` and `POST` operation
+      to perform the list and create tasks, respectively.
+    get:
+      tags:
+        - Attendee
+      parameters:
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+        - $ref: "#/components/parameters/offsetParam"
+        - $ref: "#/components/parameters/limitParam"
+        - name: sort
+          schema:
+            type: string
+          in: query
+          required: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomFieldsResponse"
+          description: Successful response - returns an array of `CustomField` entities.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+      operationId: getCustomFields
+      summary: List all custom fields
+      description: Gets a list of all `CustomField` entities.
+  /events/{eventId}/custom-fields/{customFieldId}:
+    summary: Path used to manage a single custom field.
+    description: The REST endpoint/path used to get, patch and delete single
+      instances of an `CustomField`.  This path contains `GET`, `PATCH` and
+      `DELETE` operations used to perform the get, patch and delete tasks,
+      respectively.
+  /events/{eventId}/attendee-tag:
+    summary: Path used to manage the list of attendee tags.
+    description: The REST endpoint/path used to list and create zero or more
+      `AttendeeTag` entities.  This path contains a `GET` and `POST` operation
+      to perform the list and create tasks, respectively.
+    get:
+      tags:
+        - Attendee
+      parameters:
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+        - $ref: "#/components/parameters/offsetParam"
+        - $ref: "#/components/parameters/limitParam"
+        - name: sort
+          schema:
+            type: string
+          in: query
+          required: false
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendeeTagsResponse"
+          description: Successful response - returns an array of `AttendeeTag` entities.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+      operationId: getAttendeeTags
+      summary: List all attendee tags
+      description: Gets a list of all `AttendeeTag` entities.
+  /events/{eventId}/attendee-tag/{attendeeTagId}:
+    summary: Path used to manage a single attendee tag.
+    description: The REST endpoint/path used to get, patch and delete single
+      instances of an `AttendeeTag`.  This path contains `GET`, `PATCH` and
+      `DELETE` operations used to perform the get, patch and delete tasks,
+      respectively.
+  /events/{eventId}/automated-email:
+    summary: Path used to manage the list of automated emails.
+    description: The REST endpoint/path used to list and create zero or more
+      `AutomatedEmail` entities.  This path contains a `GET` and `POST`
+      operation to perform the list and create tasks, respectively.
+  /events/{eventId}/automated-email/{automatedEmailId}:
+    summary: Path used to manage a single automated email.
+    description: The REST endpoint/path used to get, patch and delete single
+      instances of an `AutomatedEmail`.  This path contains `GET`, `PATCH` and
+      `DELETE` operations used to perform the get, patch and delete tasks,
+      respectively.
+  /events/{eventId}/manual-email:
+    summary: Path used to manage the list of manual emails.
+    description: The REST endpoint/path used to list and create zero or more
+      `ManualEmail` entities.  This path contains a `GET` and `POST` operation
+      to perform the list and create tasks, respectively.
+    get:
+      tags:
+        - Email
+      parameters:
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+        - $ref: "#/components/parameters/offsetParam"
+        - $ref: "#/components/parameters/limitParam"
+        - name: sort
+          schema:
+            type: string
+          in: query
+          required: false
+        - name: subject
+          schema: &a3
+            type: string
+          in: query
+          required: false
+          description: Search filters - subject
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualEmailsResponse"
+          description: Successful response - returns an array of `ManualEmail` entities.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+      operationId: getManualEmails
+      summary: List all manual emails
+      description: Gets a list of all `ManualEmail` entities.
+    post:
+      requestBody:
+        description: A new `ManualEmail` to be created.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManualEmail"
+        required: true
+      tags:
+        - Email
+      parameters:
+        - name: X-Request-ID
+          description: A unique identifier for the request.
+          schema:
+            type: string
+            format: uuid
+          in: header
+          required: false
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualEmailResponse"
+          description: Successful response
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+      operationId: createManualEmail
+      summary: Create a manual email
+      description: Creates a new instance of a `ManualEmail`.
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - required:
+                      - id
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                  - $ref: "#/components/schemas/ManualEmailPatchBody"
+        required: true
+      tags:
+        - Email
+      parameters:
+        - name: X-Request-ID
+          description: A unique identifier for the request.
+          schema:
+            type: string
+            format: uuid
+          in: header
+          required: false
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualEmailsResponse"
+          description: Successful response - returns a single `ManualEmail`.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+      operationId: patchManualEmails
+      summary: Patch multiple manual emails
+      description: Patches multiple instances of a `ManualEmail`.
+  /events/{eventId}/manual-email/{manualEmailId}:
+    summary: Path used to manage a single manual email.
+    description: The REST endpoint/path used to get, patch and delete single
+      instances of an `ManualEmail`.  This path contains `GET`, `PATCH` and
+      `DELETE` operations used to perform the get, patch and delete tasks,
+      respectively.
+    get:
+      tags:
+        - Email
+      parameters:
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: manualEmailId
+          description: A unique identifier for a `ManualEmail`.
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualEmailResponse"
+          description: Successful response - returns a single `ManualEmail`.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+      operationId: getManualEmail
+      summary: Get a manual email
+      description: Gets the details of a single instance of a `ManualEmail`.
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManualEmailPatchBody"
+        description: The `ManualEmail` to be patched.
+        required: true
+      tags:
+        - Email
+      parameters:
+        - name: X-Request-ID
+          description: A unique identifier for the request.
+          schema:
+            type: string
+            format: uuid
+          in: header
+          required: false
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: manualEmailId
+          description: A unique identifier for a `ManualEmail`.
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualEmailResponse"
+          description: Successful response - returns a single `ManualEmail`.
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+      operationId: patchManualEmail
+      summary: Patch a ManualEmail
+      description: Patches an existing `ManualEmail`.
+  /events/{eventId}/attendees/{attendeeId}/approve:
+    post:
+      tags:
+        - Attendee
+      responses:
+        "200":
+          description: OK
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+      operationId: approveAttendee
+      summary: Approve a attendee
+      parameters:
+        - name: X-Request-ID
+          description: A unique identifier for the request.
+          schema:
+            type: string
+            format: uuid
+          in: header
+          required: false
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: attendeeId
+          description: A unique identifier for a `Attendee`.
+          schema:
+            type: string
+          in: path
+          required: true
+  /events/{eventId}/attendees/{attendeeId}/archive:
+    post:
+      tags:
+        - Attendee
+      responses:
+        "200":
+          description: OK
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+      operationId: archiveAttendee
+      summary: Archive a attendee
+      parameters:
+        - name: X-Request-ID
+          description: A unique identifier for the request.
+          schema:
+            type: string
+            format: uuid
+          in: header
+          required: false
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: attendeeId
+          description: A unique identifier for a `Attendee`.
+          schema:
+            type: string
+          in: path
+          required: true
+  /events/{eventId}/manual-emails/{manualEmailId}/send:
+    post:
+      tags:
+        - Email
+      responses:
+        "202":
+          description: Accepted
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+      operationId: sendManualEmail
+      summary: Send a manual email
+      parameters:
+        - name: X-Request-ID
+          description: A unique identifier for the request.
+          schema:
+            type: string
+            format: uuid
+          in: header
+          required: false
+        - name: eventId
+          description: A unique identifier for a `Event`.
+          schema:
+            type: string
+          in: path
+          required: true
+        - name: manualEmailId
+          description: A unique identifier for a `ManualEmail`.
+          schema:
+            type: string
+          in: path
+          required: true
+
+components:
+  schemas:
+    UnauthorizedError:
+      required:
+        - code
+        - message
+        - status
+      type: object
+      properties:
+        code:
+          type: string
+          example: ERR_ESAAS_UNAUTHORIZED
+        message:
+          type: string
+          example: Object Not Found
+        status:
+          type: integer
+          example: 401
+    NotFoundError:
+      required:
+        - code
+        - message
+        - status
+      type: object
+      properties:
+        code:
+          type: string
+          example: ERR_ESAAS_NOT_FOUND
+        message:
+          type: string
+          example: Unauthorized
+        status:
+          type: integer
+          example: 404
+    ConflictError:
+      required:
+        - code
+        - message
+        - status
+      type: object
+      properties:
+        code:
+          type: string
+          example: ERR_ESAAS_PUBLIC_API_CONFLICT_REQUEST
+        message:
+          type: string
+          example: Duplicate X-Request-ID
+        status:
+          type: integer
+          example: 409
+    InternalServerError:
+      required:
+        - code
+        - message
+        - status
+      type: object
+      properties:
+        code:
+          type: string
+          example: ERR_ESAAS_UNKNOWN
+        message:
+          type: string
+          example: Unknown Error
+        status:
+          type: integer
+          example: 500
+    PaginationResponse:
+      required:
+        - offset
+        - limit
+        - count
+      type: object
+      properties:
+        offset:
+          type: integer
+          example: 0
+        limit:
+          type: integer
+          example: 10
+        count:
+          type: integer
+          example: 100
+    TokenCreateBody:
+      required:
+        - apiToken
+      type: object
+      properties:
+        apiToken:
+          type: string
+          format: password
+    TokenCreateResponse:
+      required:
+        - success
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          required:
+            - accessToken
+            - userId
+            - expiresIn
+            - tokenType
+          type: object
+          properties:
+            accessToken:
+              type: string
+              format: password
+            userId:
+              type: string
+              format: uuid
+            expiresIn:
+              type: integer
+              example: 3600
+            tokenType:
+              type: string
+              example: Bearer
+    Event:
+      required:
+        - id
+        - name
+        - categories
+        - types
+        - estimatedAttendeeCount
+        - timezone
+        - startsAt
+        - endsAt
+        - isPublished
+        - createdAt
+        - updatedAt
+        - defaultLocale
+        - paymentCurrency
+        - contentI18n
+        - supportedLocales
+        - attendeeVisibilityControl
+        - themeColorConfig
+        - entryType
+        - isSpecialRoleEarlyEntryAllowed
+        - isSmsNotifyActivated
+        - emailReminderEnabledControl
+        - isApprovalMechanismEnabled
+        - isPushNotificationEnabled
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+          format: uuid
+        name: *a1
+        categories: &a4
+          type: array
+          items:
+            type: string
+        types: &a5
+          type: array
+          items:
+            type: string
+        estimatedAttendeeCount: &a6
+          type: string
+        timezone: &a7
+          type: string
+        startsAt: &a8
+          format: date-time
+          type: string
+        endsAt: &a9
+          format: date-time
+          type: string
+        isPublished: &a10
+          type: boolean
+        createdAt:
+          format: date-time
+          type: string
+          readOnly: true
+        updatedAt:
+          format: date-time
+          type: string
+          readOnly: true
+        publishedAt:
+          format: date-time
+          type: string
+          readOnly: true
+        unpublishedAt:
+          format: date-time
+          type: string
+          readOnly: true
+        defaultLocale: &a11
+          enum:
+            - en
+            - ja
+            - ko
+            - vi
+            - zh-HK
+            - zh-CN
+            - es
+          type: string
+        paymentCurrency:
+          enum:
+            - USD
+            - HKD
+            - THB
+            - VND
+            - IDR
+            - MYR
+            - PHP
+            - TWD
+            - SGD
+            - KRW
+            - JPY
+            - CNY
+          type: string
+          readOnly: true
+        contentI18n:
+          type: object
+          properties: &a12
+            name:
+              type: object
+              properties:
+                default:
+                  type: string
+              additionalProperties:
+                type: string
+            location:
+              type: object
+              properties:
+                default:
+                  type: string
+              additionalProperties:
+                type: string
+            organizerName:
+              type: object
+              properties:
+                default:
+                  type: string
+              additionalProperties:
+                type: string
+            descriptionHtml:
+              type: object
+              properties:
+                default:
+                  type: string
+              additionalProperties:
+                type: string
+            logoImageMediaId:
+              type: object
+              properties:
+                default:
+                  type: string
+                  format: uuid
+              additionalProperties:
+                type: string
+                format: uuid
+            bannerImageMediaId:
+              type: object
+              properties:
+                default:
+                  type: string
+                  format: uuid
+              additionalProperties:
+                type: string
+                format: uuid
+            faviconImageMediaId:
+              type: object
+              properties:
+                default:
+                  type: string
+                  format: uuid
+              additionalProperties:
+                type: string
+                format: uuid
+            ogImageMediaId:
+              type: object
+              properties:
+                default:
+                  type: string
+                  format: uuid
+              additionalProperties:
+                type: string
+                format: uuid
+            ogDescription:
+              type: object
+              properties:
+                default:
+                  type: string
+              additionalProperties:
+                type: string
+            ogTitle:
+              type: object
+              properties:
+                default:
+                  type: string
+              additionalProperties:
+                type: string
+        supportedLocales: &a13
+          type: array
+          items:
+            enum:
+              - en
+              - ja
+              - ko
+              - vi
+              - zh-HK
+              - zh-CN
+              - es
+            type: string
+        attendeeVisibilityControl:
+          type: object
+          properties:
+            shouldHideAttendeeCount:
+              type: boolean
+            shouldHideWltViewerCount:
+              type: boolean
+            shouldHidePeopleList:
+              type: boolean
+            shouldHidePublicChat:
+              type: boolean
+            shouldHideQnA:
+              type: boolean
+            shouldHidePolling:
+              type: boolean
+            shouldShowPrivateChatVideoCall:
+              type: boolean
+            shouldHideMeetup:
+              type: boolean
+            shouldHideBoothChat:
+              type: boolean
+          readOnly: true
+        themeColorConfig:
+          type: object
+          properties: &a14
+            primaryColor:
+              type: string
+            secondaryColor:
+              type: string
+        entryType: &a15
+          enum:
+            - by_invite_only
+            - public
+          type: string
+        isSpecialRoleEarlyEntryAllowed: &a16
+          type: boolean
+        isSmsNotifyActivated: &a17
+          type: boolean
+        emailReminderEnabledControl:
+          type: object
+          properties:
+            oneDay:
+              type: boolean
+            oneHour:
+              type: boolean
+          readOnly: true
+        format:
+          enum:
+            - virtual
+            - in-person
+            - hybrid
+          type: string
+          readOnly: true
+        organizationAreaCode:
+          type: string
+          readOnly: true
+        organizationContactNo:
+          type: string
+          readOnly: true
+        locationLatLng:
+          type: object
+          properties: &a18
+            lat:
+              type: string
+            lng:
+              type: string
+        isApprovalMechanismEnabled: &a19
+          type: string
+        isPushNotificationEnabled: &a20
+          type: boolean
+    Attendee:
+      required:
+        - id
+        - status
+        - createdAt
+        - updatedAt
+        - isEmailInviteSent
+        - roleTags
+        - suspendStatus
+        - approvalStatus
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+          format: uuid
+        email: *a2
+        status: &a21
+          enum:
+            - invited
+            - registered
+            - attended
+            - magic-link
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+          readOnly: true
+        updatedAt:
+          format: date-time
+          type: string
+          readOnly: true
+        registeredAt:
+          format: date-time
+          type: string
+          readOnly: true
+        jobTitle: &a22
+          type: string
+          maxLength: 100
+        organization: &a23
+          type: string
+          maxLength: 100
+        city: &a24
+          type: string
+          maxLength: 100
+        country: &a25
+          type: string
+        areaCode:
+          type: string
+          readOnly: true
+        contactNo: &a26
+          type: string
+          maxLength: 100
+        name: &a27
+          type: string
+          maxLength: 100
+        isEmailInviteSent:
+          type: boolean
+          readOnly: true
+        attendedAt:
+          format: date-time
+          type: string
+          readOnly: true
+        roleTags:
+          type: array
+          items:
+            enum:
+              - organizer
+              - host
+              - speaker
+              - exhibitor
+              - booth-rep
+              - visitor
+              - system
+            type: string
+          readOnly: true
+        magicLinkToken:
+          type: string
+          readOnly: true
+        source:
+          enum:
+            - salesforce
+            - explorer
+            - speaker-onboard
+          type: string
+          readOnly: true
+        suspendStatus:
+          enum:
+            - none
+            - removed
+            - blocked
+          type: string
+          readOnly: true
+        customCheckInToken:
+          type: string
+          readOnly: true
+        checkInMethod:
+          enum:
+            - walk_in
+            - check_in
+            - qr_code
+            - search
+          type: string
+          readOnly: true
+        approvalStatus:
+          enum:
+            - waitlisted
+            - approved
+            - rejected
+          type: string
+          readOnly: true
+        approvedAt:
+          format: date-time
+          type: string
+          readOnly: true
+        rejectedAt:
+          format: date-time
+          type: string
+          readOnly: true
+        customFields:
+          type: object
+          additionalProperties:
+            anyOf:
+              - &a28
+                type: string
+              - &a29
+                type: array
+                items:
+                  type: string
+              - &a30
+                type: boolean
+        attendeeTagIds: &a31
+          type: array
+          items:
+            type: string
+            format: uuid
+        ticketClassId: &a32
+          type: string
+          format: uuid
+        attendeeTags:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendeeTag"
+          readOnly: true
+    CustomField:
+      anyOf:
+        - required:
+            - id
+            - label
+            - contentI18n
+            - type
+            - config
+          type: object
+          properties:
+            id:
+              type: string
+            label:
+              type: string
+            contentI18n:
+              type: object
+              properties:
+                label:
+                  type: object
+                  properties:
+                    default:
+                      type: string
+                  additionalProperties:
+                    type: string
+            type:
+              enum:
+                - text
+              type: string
+        - required:
+            - id
+            - label
+            - contentI18n
+            - type
+            - config
+          type: object
+          properties:
+            id:
+              type: string
+            label:
+              type: string
+            contentI18n:
+              type: object
+              properties:
+                label:
+                  type: object
+                  properties:
+                    default:
+                      type: string
+                  additionalProperties:
+                    type: string
+            type:
+              enum:
+                - textArea
+              type: string
+        - required:
+            - id
+            - label
+            - contentI18n
+            - type
+            - config
+          type: object
+          properties:
+            id:
+              type: string
+            label:
+              type: string
+            contentI18n:
+              type: object
+              properties:
+                label:
+                  type: object
+                  properties:
+                    default:
+                      type: string
+                  additionalProperties:
+                    type: string
+            type:
+              enum:
+                - singleCheckbox
+              type: string
+        - required:
+            - id
+            - label
+            - contentI18n
+            - type
+            - config
+          type: object
+          properties:
+            id:
+              type: string
+            label:
+              type: string
+            contentI18n:
+              type: object
+              properties:
+                label:
+                  type: object
+                  properties:
+                    default:
+                      type: string
+                  additionalProperties:
+                    type: string
+            type:
+              enum:
+                - radioGroup
+              type: string
+            config:
+              required:
+                - options
+              type: object
+              properties:
+                options:
+                  type: array
+                  items:
+                    required:
+                      - id
+                      - label
+                      - contentI18n
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      label:
+                        type: string
+                      contentI18n:
+                        type: object
+                        properties:
+                          label:
+                            type: object
+                            properties:
+                              default:
+                                type: string
+                            additionalProperties:
+                              type: string
+        - required:
+            - id
+            - label
+            - contentI18n
+            - type
+            - config
+          type: object
+          properties:
+            id:
+              type: string
+            label:
+              type: string
+            contentI18n:
+              type: object
+              properties:
+                label:
+                  type: object
+                  properties:
+                    default:
+                      type: string
+                  additionalProperties:
+                    type: string
+            type:
+              enum:
+                - checkboxGroup
+              type: string
+            config:
+              required:
+                - options
+              type: object
+              properties:
+                options:
+                  type: array
+                  items:
+                    required:
+                      - id
+                      - label
+                      - contentI18n
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      label:
+                        type: string
+                      contentI18n:
+                        type: object
+                        properties:
+                          label:
+                            type: object
+                            properties:
+                              default:
+                                type: string
+                            additionalProperties:
+                              type: string
+        - required:
+            - id
+            - label
+            - contentI18n
+            - type
+            - config
+          type: object
+          properties:
+            id:
+              type: string
+            label:
+              type: string
+            contentI18n:
+              type: object
+              properties:
+                label:
+                  type: object
+                  properties:
+                    default:
+                      type: string
+                  additionalProperties:
+                    type: string
+            type:
+              enum:
+                - dropdown
+              type: string
+            config:
+              required:
+                - options
+              type: object
+              properties:
+                options:
+                  type: array
+                  items:
+                    required:
+                      - id
+                      - label
+                      - contentI18n
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      label:
+                        type: string
+                      contentI18n:
+                        type: object
+                        properties:
+                          label:
+                            type: object
+                            properties:
+                              default:
+                                type: string
+                            additionalProperties:
+                              type: string
+    TicketClass:
+      required:
+        - id
+        - eventId
+        - name
+        - qty
+        - price
+        - saleStartsAt
+        - saleEndsAt
+        - description
+        - message
+        - isAccessibleToAllWebinarSession
+        - accessibleWebinarSessionIds
+        - createdAt
+        - updatedAt
+        - contentI18n
+        - isAccessibleToAllPhysicalSessions
+        - accessiblePhysicalSessionIds
+        - isAccessibleToPhysicalEvent
+        - isAccessibleToAllScheduleSession
+        - accessibleScheduleSessionIds
+      type: object
+      properties:
+        id: &a33
+          type: string
+          format: uuid
+        eventId: &a34
+          type: string
+          format: uuid
+        name: &a35
+          type: string
+        qty: &a36
+          type: integer
+        price: &a37
+          type: integer
+        saleStartsAt: &a38
+          format: date-time
+          type: string
+        saleEndsAt: &a39
+          format: date-time
+          type: string
+        description: &a40
+          type: string
+        message: &a41
+          type: string
+        isAccessibleToAllWebinarSession: &a42
+          type: boolean
+        accessibleWebinarSessionIds: &a43
+          type: array
+          items:
+            type: string
+        createdAt: &a44
+          format: date-time
+          type: string
+        updatedAt: &a45
+          format: date-time
+          type: string
+        contentI18n:
+          type: object
+          properties: &a46
+            name:
+              type: object
+              properties:
+                default:
+                  type: string
+              additionalProperties:
+                type: string
+            description:
+              type: object
+              properties:
+                default:
+                  type: string
+              additionalProperties:
+                type: string
+            message:
+              type: object
+              properties:
+                default:
+                  type: string
+              additionalProperties:
+                type: string
+        isAccessibleToAllPhysicalSessions: &a47
+          type: boolean
+        accessiblePhysicalSessionIds: &a48
+          type: array
+          items:
+            type: string
+        isAccessibleToPhysicalEvent: &a49
+          type: boolean
+        emsTicketId: &a50
+          type: string
+        isAccessibleToAllScheduleSession: &a51
+          type: boolean
+        accessibleScheduleSessionIds: &a52
+          type: array
+          items:
+            type: string
+    AttendeeTicket:
+      required:
+        - id
+        - ticketClassId
+        - eventId
+        - ownedByUserId
+        - createdAt
+        - updatedAt
+      type: object
+      properties:
+        id: &a53
+          type: string
+          format: uuid
+        ticketClassId: &a54
+          type: string
+          format: uuid
+        eventId: &a55
+          type: string
+          format: uuid
+        claimedByAttendeeId: &a56
+          type: string
+          format: uuid
+        orderItemId: &a57
+          type: string
+          format: uuid
+        ownedByUserId: &a58
+          type: string
+          format: uuid
+        createdAt: &a59
+          format: date-time
+          type: string
+        updatedAt: &a60
+          format: date-time
+          type: string
+    AttendeeTag:
+      required:
+        - id
+        - name
+        - createdAt
+        - updatedAt
+      type: object
+      properties:
+        id: &a61
+          type: string
+          format: uuid
+        name: &a62
+          type: string
+        createdAt: &a63
+          format: date-time
+          type: string
+        updatedAt: &a64
+          format: date-time
+          type: string
+    AutomatedEmail:
+      required:
+        - id
+        - type
+        - subject
+        - contentHtml
+        - design
+        - senderName
+        - shouldAttachCalendarFile
+        - createdAt
+        - updatedAt
+        - eventId
+      type: object
+      properties:
+        id: &a65
+          type: string
+          format: uuid
+        type: &a66
+          enum:
+            - attendee-invitation-email
+            - attendee-rsvp-email
+            - speaker-invitation-email
+            - special-role-invitation-email
+            - confirmation-email
+            - confirmation-email-with-ticket-summary
+            - reminder-24H-email
+            - reminder-1H-email
+            - order-summary-item
+            - order-summary-email
+            - order-summary-confirmation
+            - event-manager-invitation
+            - organization-manager-invitation
+            - magic-link-retrieval
+            - login-link
+            - organizaer-daily-digest-email
+            - lead-capture-invitation-email
+            - lead-capture-exporting-email
+            - attendee-approval-acknowledgement-email
+            - confirmation-email-for-ticket-owner
+            - assign-ticket-email-without-payment
+            - assign-ticket-email-with-payment
+          type: string
+        subject: &a67
+          type: string
+        contentHtml: &a68
+          type: string
+        design: &a69
+          type: string
+        senderName: &a70
+          type: string
+        senderEmail: &a71
+          type: string
+        shouldAttachCalendarFile: &a72
+          type: boolean
+        isDisabled: &a73
+          type: boolean
+        createdAt: &a74
+          format: date-time
+          type: string
+        updatedAt: &a75
+          format: date-time
+          type: string
+        eventId: &a76
+          type: string
+          format: uuid
+    ManualEmail:
+      required:
+        - id
+        - subject
+        - contentHtml
+        - design
+        - senderName
+        - shouldAttachCalendarFile
+        - replyToEmail
+        - recipientFilters
+        - createdAt
+        - updatedAt
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+          format: uuid
+        subject: *a3
+        contentHtml: &a77
+          type: string
+        design: &a78
+          type: string
+        senderName: &a79
+          type: string
+        senderEmail: &a80
+          type: string
+        shouldAttachCalendarFile: &a81
+          type: boolean
+        replyToEmail: &a82
+          type: string
+        recipientFilters:
+          anyOf:
+            - required: &a83
+                - type
+              type: object
+              properties: &a84
+                type:
+                  enum:
+                    - attendee-all
+                  type: string
+            - required: &a85
+                - type
+                - value
+              type: object
+              properties: &a86
+                type:
+                  enum:
+                    - attendee-manually-selected
+                  type: string
+                value:
+                  type: string
+            - required: &a87
+                - type
+                - value
+              type: object
+              properties: &a88
+                type:
+                  enum:
+                    - attendee-status
+                  type: string
+                value:
+                  enum:
+                    - invited
+                    - registered
+                    - attended
+                    - magic-link
+                  type: string
+            - required: &a89
+                - type
+                - value
+              type: object
+              properties: &a90
+                type:
+                  enum:
+                    - attendee-tag
+                  type: string
+                value:
+                  type: string
+            - required: &a91
+                - type
+                - value
+              type: object
+              properties: &a92
+                type:
+                  enum:
+                    - attendee-custom-field
+                  type: string
+                value:
+                  type: string
+        status:
+          enum:
+            - draft
+            - completed
+            - failed
+            - scheduled
+            - processing
+          type: string
+          readOnly: true
+        scheduledAt: &a93
+          type: string
+        timezone: &a94
+          type: string
+        sentAt:
+          type: string
+          readOnly: true
+        createdAt:
+          format: date-time
+          type: string
+          readOnly: true
+        updatedAt:
+          format: date-time
+          type: string
+          readOnly: true
+    EventsResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
+        pagination:
+          $ref: "#/components/schemas/PaginationResponse"
+    AttendeesResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attendee"
+        pagination:
+          $ref: "#/components/schemas/PaginationResponse"
+    CustomFieldsResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomField"
+    TicketClasssResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TicketClass"
+    AttendeeTicketsResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendeeTicket"
+    AttendeeTagsResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendeeTag"
+    AutomatedEmailsResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AutomatedEmail"
+    ManualEmailsResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ManualEmail"
+    EventResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/Event"
+    AttendeeResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/Attendee"
+    CustomFieldResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/CustomField"
+    TicketClassResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/TicketClass"
+    AttendeeTicketResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/AttendeeTicket"
+    AttendeeTagResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/AttendeeTag"
+    AutomatedEmailResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/AutomatedEmail"
+    ManualEmailResponse:
+      required:
+        - success
+        - data
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/ManualEmail"
+    EventPatchBody:
+      type: object
+      properties:
+        name:
+          anyOf:
+            - *a1
+            - type: object
+              properties:
+                $set: *a1
+        categories:
+          anyOf:
+            - *a4
+            - type: object
+              properties:
+                $set: *a4
+            - type: object
+              properties:
+                $addToSet: *a4
+            - type: object
+              properties:
+                $pull: *a4
+        types:
+          anyOf:
+            - *a5
+            - type: object
+              properties:
+                $set: *a5
+            - type: object
+              properties:
+                $addToSet: *a5
+            - type: object
+              properties:
+                $pull: *a5
+        estimatedAttendeeCount:
+          anyOf:
+            - *a6
+            - type: object
+              properties:
+                $set: *a6
+        timezone:
+          anyOf:
+            - *a7
+            - type: object
+              properties:
+                $set: *a7
+        startsAt:
+          anyOf:
+            - *a8
+            - type: object
+              properties:
+                $set: *a8
+        endsAt:
+          anyOf:
+            - *a9
+            - type: object
+              properties:
+                $set: *a9
+        isPublished:
+          anyOf:
+            - *a10
+            - type: object
+              properties:
+                $set: *a10
+        defaultLocale:
+          anyOf:
+            - *a11
+            - type: object
+              properties:
+                $set: *a11
+        contentI18n:
+          anyOf:
+            - type: object
+              properties: *a12
+            - type: object
+              properties:
+                $set:
+                  type: object
+                  properties: *a12
+        supportedLocales:
+          anyOf:
+            - *a13
+            - type: object
+              properties:
+                $set: *a13
+            - type: object
+              properties:
+                $addToSet: *a13
+            - type: object
+              properties:
+                $pull: *a13
+        themeColorConfig:
+          anyOf:
+            - type: object
+              properties: *a14
+            - type: object
+              properties:
+                $set:
+                  type: object
+                  properties: *a14
+        entryType:
+          anyOf:
+            - *a15
+            - type: object
+              properties:
+                $set: *a15
+        isSpecialRoleEarlyEntryAllowed:
+          anyOf:
+            - *a16
+            - type: object
+              properties:
+                $set: *a16
+        isSmsNotifyActivated:
+          anyOf:
+            - *a17
+            - type: object
+              properties:
+                $set: *a17
+        locationLatLng:
+          anyOf:
+            - type: object
+              properties: *a18
+            - type: object
+              properties:
+                $set:
+                  type: object
+                  properties: *a18
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        isApprovalMechanismEnabled:
+          anyOf:
+            - *a19
+            - type: object
+              properties:
+                $set: *a19
+        isPushNotificationEnabled:
+          anyOf:
+            - *a20
+            - type: object
+              properties:
+                $set: *a20
+    AttendeePatchBody:
+      type: object
+      properties:
+        email:
+          anyOf:
+            - *a2
+            - type: object
+              properties:
+                $set: *a2
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        status:
+          anyOf:
+            - *a21
+            - type: object
+              properties:
+                $set: *a21
+        jobTitle:
+          anyOf:
+            - *a22
+            - type: object
+              properties:
+                $set: *a22
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        organization:
+          anyOf:
+            - *a23
+            - type: object
+              properties:
+                $set: *a23
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        city:
+          anyOf:
+            - *a24
+            - type: object
+              properties:
+                $set: *a24
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        country:
+          anyOf:
+            - *a25
+            - type: object
+              properties:
+                $set: *a25
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        contactNo:
+          anyOf:
+            - *a26
+            - type: object
+              properties:
+                $set: *a26
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        name:
+          anyOf:
+            - *a27
+            - type: object
+              properties:
+                $set: *a27
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        customFields:
+          anyOf:
+            - type: object
+              additionalProperties:
+                anyOf:
+                  - anyOf:
+                      - *a28
+                      - type: object
+                        properties:
+                          $set: *a28
+                      - type: object
+                        properties:
+                          $unset:
+                            type: boolean
+                  - anyOf:
+                      - *a29
+                      - type: object
+                        properties:
+                          $set: *a29
+                      - type: object
+                        properties:
+                          $addToSet: *a29
+                      - type: object
+                        properties:
+                          $pull: *a29
+                      - type: object
+                        properties:
+                          $unset:
+                            type: boolean
+                  - anyOf:
+                      - *a30
+                      - type: object
+                        properties:
+                          $set: *a30
+                      - type: object
+                        properties:
+                          $unset:
+                            type: boolean
+            - type: object
+              properties:
+                $set:
+                  type: object
+                  additionalProperties:
+                    anyOf:
+                      - anyOf:
+                          - *a28
+                          - type: object
+                            properties:
+                              $set: *a28
+                          - type: object
+                            properties:
+                              $unset:
+                                type: boolean
+                      - anyOf:
+                          - *a29
+                          - type: object
+                            properties:
+                              $set: *a29
+                          - type: object
+                            properties:
+                              $addToSet: *a29
+                          - type: object
+                            properties:
+                              $pull: *a29
+                          - type: object
+                            properties:
+                              $unset:
+                                type: boolean
+                      - anyOf:
+                          - *a30
+                          - type: object
+                            properties:
+                              $set: *a30
+                          - type: object
+                            properties:
+                              $unset:
+                                type: boolean
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        attendeeTagIds:
+          anyOf:
+            - *a31
+            - type: object
+              properties:
+                $set: *a31
+            - type: object
+              properties:
+                $addToSet: *a31
+            - type: object
+              properties:
+                $pull: *a31
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        ticketClassId:
+          anyOf:
+            - *a32
+            - type: object
+              properties:
+                $set: *a32
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+    TicketClassPatchBody:
+      type: object
+      properties:
+        id:
+          anyOf:
+            - *a33
+            - type: object
+              properties:
+                $set: *a33
+        eventId:
+          anyOf:
+            - *a34
+            - type: object
+              properties:
+                $set: *a34
+        name:
+          anyOf:
+            - *a35
+            - type: object
+              properties:
+                $set: *a35
+        qty:
+          anyOf:
+            - *a36
+            - type: object
+              properties:
+                $set: *a36
+        price:
+          anyOf:
+            - *a37
+            - type: object
+              properties:
+                $set: *a37
+        saleStartsAt:
+          anyOf:
+            - *a38
+            - type: object
+              properties:
+                $set: *a38
+        saleEndsAt:
+          anyOf:
+            - *a39
+            - type: object
+              properties:
+                $set: *a39
+        description:
+          anyOf:
+            - *a40
+            - type: object
+              properties:
+                $set: *a40
+        message:
+          anyOf:
+            - *a41
+            - type: object
+              properties:
+                $set: *a41
+        isAccessibleToAllWebinarSession:
+          anyOf:
+            - *a42
+            - type: object
+              properties:
+                $set: *a42
+        accessibleWebinarSessionIds:
+          anyOf:
+            - *a43
+            - type: object
+              properties:
+                $set: *a43
+            - type: object
+              properties:
+                $addToSet: *a43
+            - type: object
+              properties:
+                $pull: *a43
+        createdAt:
+          anyOf:
+            - *a44
+            - type: object
+              properties:
+                $set: *a44
+        updatedAt:
+          anyOf:
+            - *a45
+            - type: object
+              properties:
+                $set: *a45
+        contentI18n:
+          anyOf:
+            - type: object
+              properties: *a46
+            - type: object
+              properties:
+                $set:
+                  type: object
+                  properties: *a46
+        isAccessibleToAllPhysicalSessions:
+          anyOf:
+            - *a47
+            - type: object
+              properties:
+                $set: *a47
+        accessiblePhysicalSessionIds:
+          anyOf:
+            - *a48
+            - type: object
+              properties:
+                $set: *a48
+            - type: object
+              properties:
+                $addToSet: *a48
+            - type: object
+              properties:
+                $pull: *a48
+        isAccessibleToPhysicalEvent:
+          anyOf:
+            - *a49
+            - type: object
+              properties:
+                $set: *a49
+        emsTicketId:
+          anyOf:
+            - *a50
+            - type: object
+              properties:
+                $set: *a50
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        isAccessibleToAllScheduleSession:
+          anyOf:
+            - *a51
+            - type: object
+              properties:
+                $set: *a51
+        accessibleScheduleSessionIds:
+          anyOf:
+            - *a52
+            - type: object
+              properties:
+                $set: *a52
+            - type: object
+              properties:
+                $addToSet: *a52
+            - type: object
+              properties:
+                $pull: *a52
+    AttendeeTicketPatchBody:
+      type: object
+      properties:
+        id:
+          anyOf:
+            - *a53
+            - type: object
+              properties:
+                $set: *a53
+        ticketClassId:
+          anyOf:
+            - *a54
+            - type: object
+              properties:
+                $set: *a54
+        eventId:
+          anyOf:
+            - *a55
+            - type: object
+              properties:
+                $set: *a55
+        claimedByAttendeeId:
+          anyOf:
+            - *a56
+            - type: object
+              properties:
+                $set: *a56
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        orderItemId:
+          anyOf:
+            - *a57
+            - type: object
+              properties:
+                $set: *a57
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        ownedByUserId:
+          anyOf:
+            - *a58
+            - type: object
+              properties:
+                $set: *a58
+        createdAt:
+          anyOf:
+            - *a59
+            - type: object
+              properties:
+                $set: *a59
+        updatedAt:
+          anyOf:
+            - *a60
+            - type: object
+              properties:
+                $set: *a60
+    AttendeeTagPatchBody:
+      type: object
+      properties:
+        id:
+          anyOf:
+            - *a61
+            - type: object
+              properties:
+                $set: *a61
+        name:
+          anyOf:
+            - *a62
+            - type: object
+              properties:
+                $set: *a62
+        createdAt:
+          anyOf:
+            - *a63
+            - type: object
+              properties:
+                $set: *a63
+        updatedAt:
+          anyOf:
+            - *a64
+            - type: object
+              properties:
+                $set: *a64
+    AutomatedEmailPatchBody:
+      type: object
+      properties:
+        id:
+          anyOf:
+            - *a65
+            - type: object
+              properties:
+                $set: *a65
+        type:
+          anyOf:
+            - *a66
+            - type: object
+              properties:
+                $set: *a66
+        subject:
+          anyOf:
+            - *a67
+            - type: object
+              properties:
+                $set: *a67
+        contentHtml:
+          anyOf:
+            - *a68
+            - type: object
+              properties:
+                $set: *a68
+        design:
+          anyOf:
+            - *a69
+            - type: object
+              properties:
+                $set: *a69
+        senderName:
+          anyOf:
+            - *a70
+            - type: object
+              properties:
+                $set: *a70
+        senderEmail:
+          anyOf:
+            - *a71
+            - type: object
+              properties:
+                $set: *a71
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        shouldAttachCalendarFile:
+          anyOf:
+            - *a72
+            - type: object
+              properties:
+                $set: *a72
+        isDisabled:
+          anyOf:
+            - *a73
+            - type: object
+              properties:
+                $set: *a73
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        createdAt:
+          anyOf:
+            - *a74
+            - type: object
+              properties:
+                $set: *a74
+        updatedAt:
+          anyOf:
+            - *a75
+            - type: object
+              properties:
+                $set: *a75
+        eventId:
+          anyOf:
+            - *a76
+            - type: object
+              properties:
+                $set: *a76
+    ManualEmailPatchBody:
+      type: object
+      properties:
+        subject:
+          anyOf:
+            - *a3
+            - type: object
+              properties:
+                $set: *a3
+        contentHtml:
+          anyOf:
+            - *a77
+            - type: object
+              properties:
+                $set: *a77
+        design:
+          anyOf:
+            - *a78
+            - type: object
+              properties:
+                $set: *a78
+        senderName:
+          anyOf:
+            - *a79
+            - type: object
+              properties:
+                $set: *a79
+        senderEmail:
+          anyOf:
+            - *a80
+            - type: object
+              properties:
+                $set: *a80
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        shouldAttachCalendarFile:
+          anyOf:
+            - *a81
+            - type: object
+              properties:
+                $set: *a81
+        replyToEmail:
+          anyOf:
+            - *a82
+            - type: object
+              properties:
+                $set: *a82
+        recipientFilters:
+          anyOf:
+            - anyOf:
+                - required: *a83
+                  type: object
+                  properties: *a84
+                - type: object
+                  properties:
+                    $set:
+                      required: *a83
+                      type: object
+                      properties: *a84
+            - anyOf:
+                - required: *a85
+                  type: object
+                  properties: *a86
+                - type: object
+                  properties:
+                    $set:
+                      required: *a85
+                      type: object
+                      properties: *a86
+            - anyOf:
+                - required: *a87
+                  type: object
+                  properties: *a88
+                - type: object
+                  properties:
+                    $set:
+                      required: *a87
+                      type: object
+                      properties: *a88
+            - anyOf:
+                - required: *a89
+                  type: object
+                  properties: *a90
+                - type: object
+                  properties:
+                    $set:
+                      required: *a89
+                      type: object
+                      properties: *a90
+            - anyOf:
+                - required: *a91
+                  type: object
+                  properties: *a92
+                - type: object
+                  properties:
+                    $set:
+                      required: *a91
+                      type: object
+                      properties: *a92
+        scheduledAt:
+          anyOf:
+            - *a93
+            - type: object
+              properties:
+                $set: *a93
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+        timezone:
+          anyOf:
+            - *a94
+            - type: object
+              properties:
+                $set: *a94
+            - type: object
+              properties:
+                $unset:
+                  type: boolean
+  parameters:
+    XRequestIdParam:
+      in: header
+      name: X-Request-ID
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: A unique identifier for the request. Auto handled by the API SDK.
+    offsetParam:
+      in: query
+      name: offset
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: The number of items to skip before starting to collect the result set.
+    limitParam:
+      in: query
+      name: limit
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 25
+      description: The numbers of items to return.
+    eventIdParam:
+      in: path
+      name: eventId
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: A unique identifier for a `Event`.
+    attendeeIdParam:
+      in: path
+      name: attendeeId
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: A unique identifier for a `Attendee`.
+    manualEmailIdParam:
+      in: path
+      name: manualEmailId
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: A unique identifier for a `Manual Email`.
+  responses:
+    UnauthorizedError:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UnauthorizedError"
+      description: "Unauthorized response - returns an error message. "
+    ConflictError:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ConflictError"
+      description: "Duplicate requests - returns an error message. "
+    InternalServerError:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/InternalServerError"
+      description: "Internal Server Error - returns an error message. "
+
+  securitySchemes:
+    EsaasAccessToken:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
+security:
+  - PublicApiToken: []
